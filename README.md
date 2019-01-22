@@ -23,21 +23,27 @@ You have:
 - a Google Cloud account
   - GKE enabled within that project
   - Istio enabled
-- and `gcloud` installed
+- and [`gcloud` installed](https://cloud.google.com/sdk/install)
 
 **GKE settings (at creation of the cluster):**
 
 In "advanced settings":
 
-- Networking > VPC-native > [x] Enable VPC native (using alias IP) <sub>[details](https://cloud.google.com/kubernetes-engine/docs/how-to/alias-ips?hl=en_US&_ga=2.193848357.-966989269.1542020118&_gac=1.155356873.1547648787.CjwKCAiAyfvhBRBsEiwAe2t_i2Sx9xEckJFlzuzmzZYqnJwTjM2cwjU3AlxjppH9MPEtQa5w7QnXvhoCU_EQAvD_BwE)</sub>
+- `Networking` > `VPC-native` > `[x] Enable VPC native (using alias IP)` <sub>[details](https://cloud.google.com/kubernetes-engine/docs/how-to/alias-ips?hl=en_US&_ga=2.193848357.-966989269.1542020118&_gac=1.155356873.1547648787.CjwKCAiAyfvhBRBsEiwAe2t_i2Sx9xEckJFlzuzmzZYqnJwTjM2cwjU3AlxjppH9MPEtQa5w7QnXvhoCU_EQAvD_BwE)</sub>
   - this is "soon going to be default" so no reason not to
-- Load balancing > [ ] Enable HTTP load balancing; you can likely switch this off since we're using Istio. <font color=red>tbd. try out</font>
-- Additional features > [x] Try the new Stackdriver beta Monitoring and Logging experience
-- [x] Enable Istio
+- `Load balancing` > `[ ] Enable HTTP load balancing`; you can likely switch this off since we're using Istio. <font color=red>tbd. try out</font>
+- `Additional features` > `[x] Try the new Stackdriver beta Monitoring and Logging experience`
+- `[x] Enable Istio`
 
-Pick Kubernetes 1.11 (required from Knative 0.3 and above).
+Kubernetes 1.11 is required for Knative 0.3.0 and above (I chose latest, `1.11.6-gke.2`). If you miss the Kubernetes version, the cluster is upgradable (see later).
 
-If you missed it, the Kubernetes cluster seems to be upgradable (I chose latest, `1.11.6-gke.2`).
+**Permissive or strict mTLS mode?**
+
+See [here](https://istio.io/docs/reference/config/istio.authentication.v1alpha1/#MutualTls-Mode):
+
+- "permissive" allows http as well as https (right?), and does not require requests to be carrying a certificate
+
+><font color=red>Confirm the above, once more experienced.</font>
 
 
 ### Command line tools
@@ -89,27 +95,7 @@ $ kubectl create clusterrolebinding cluster-admin-binding \
 clusterrolebinding.rbac.authorization.k8s.io "cluster-admin-binding" created
 ```
 
-<!-- skip
-### Just in case - is Istio running?
-
-```
-$ kubectl get pods --namespace=istio-system
-
-NAME                                        READY     STATUS      RESTARTS   AGE
-istio-citadel-769c47cf6f-6bscc              1/1       Running     0          42m
-istio-cleanup-secrets-6h6cd                 0/1       Completed   0          42m
-istio-egressgateway-79b865f9d4-6h7q4        1/1       Running     0          42m
-istio-galley-c4d8dcd44-7pj8k                1/1       Running     0          42m
-istio-ingressgateway-5476bcc96c-7n25v       1/1       Running     0          42m
-istio-pilot-7866c86c98-2r2vk                0/2       Pending     0          42m
-istio-policy-8579f97744-f99jt               2/2       Running     0          42m
-istio-sidecar-injector-565b99987d-6d7md     1/1       Running     0          42m
-istio-statsd-prom-bridge-6ccf8549fc-hd89b   1/1       Running     0          42m
-istio-telemetry-56cd85d849-p92wj            2/2       Running     0          42m
-prometheus-5ffcccb98c-lfxk5                 1/1       Running     0          42m
-```
--->
-
+<!-- disabled (we don't use it in install)
 ### Pick the version
 
 Let's see the latest version from [releases](https://github.com/knative/serving/releases) (GitHub).
@@ -117,7 +103,7 @@ Let's see the latest version from [releases](https://github.com/knative/serving/
 >0.3 is the first release of our new schedule of releasing every 6 weeks.
 
 >Kubernetes 1.11 is now required
-
+-->
 
 ### Install
 
@@ -141,7 +127,7 @@ webhook-7797ffb6bf-qv7fr      1/1       Running   0          4m
 
 ### Which version did we get?
 
-Yep, we installed `latest` (installing 0.3.0 failed when Asko tried it). What did we end up with?
+We installed `latest` - what did we end up with?
 
 ```
 $ kubectl describe deploy controller --namespace knative-serving
@@ -166,6 +152,27 @@ Here, we caught the image is tagged `latest` and `v0.3.0` so that's what we got.
 >Note: This was inspired by [these instructions](https://github.com/knative/docs/blob/master/install/check-install-version.md).
 
 ---
+
+## Then what?
+
+We'll get back to the [Knative codelabs #6](https://codelabs.developers.google.com/codelabs/knative-intro/#6) and follow their sample.
+
+```
+$ kubectl apply -f helloworld.yaml
+service.serving.knative.dev "helloworld" created
+```
+
+*(you should now follow the codelabs page)*
+
+Didn't get a response to the `curl` command?
+
+```
+$ curl -H "Host: helloworld.default.example.com" http://35.228.134.203 
+curl: (7) Failed to connect to 35.228.134.203 port 80: Connection refused
+```
+
+><font color=red>Fix.</font>
+
 
 
 
