@@ -162,18 +162,96 @@ $ kubectl apply -f helloworld.yaml
 service.serving.knative.dev "helloworld" created
 ```
 
-*(you should now follow the codelabs page)*
+You should now follow the codelabs page. Come back at the end of page 7 (hmm.. which has URL hash `#6`).
 
-Didn't get a response to the `curl` command?
+---
+
+Did the `curl` command fail like this?
 
 ```
 $ curl -H "Host: helloworld.default.example.com" http://35.228.134.203 
 curl: (7) Failed to connect to 35.228.134.203 port 80: Connection refused
 ```
 
-><font color=red>Fix.</font>
+There's been a change in Knative 0.3.0 (the codelabs used 0.2.1 at the time of writing this):
 
+>Use the default gateway istio-ingressgateway by default (@lichuqiang)
+>
+>We have deprecated the Knative copy of the Istio ingress gateway.
 
+There are two gateways at play. Check at GCP Console > Kubernetes Engine > Services:
+
+![](.images/gke-services.png)
+
+The `istio-ingressgateway` here is at `35.228.80.221`. It responds:
+
+```
+$ curl -H "Host: helloworld.default.example.com" http://35.228.80.221
+Hello world!
+```
+
+The `knative-ingressgateway` refuses the connection, as seen above.
+
+---
+
+>Note: Not sure if some setting would be at play here - it seems (naive guess) that Knative is now using the normal Istio gateway, which likely is simpler all-around.
+
+---
+
+You can get the `istio-ingressgateway`'s IP the same way as mentioned in the codelabs tutorial, just ask for another service:
+
+```
+$ kubectl get service --namespace=istio-system istio-ingressgateway
+NAME                   TYPE           CLUSTER-IP   EXTERNAL-IP     PORT(S)                                                                                                                   AGE
+istio-ingressgateway   LoadBalancer   10.0.12.22   35.228.80.221   80:31380/TCP,443:31390/TCP,31400:31400/TCP,15011:30945/TCP,8060:30802/TCP,853:32565/TCP,15030:31614/TCP,15031:32127/TCP   5h
+```
+
+---
+
+><font color=darkorange>Hint: You can use `jq` to pick the right value out:
+>
+>```
+>$ kubectl get service --namespace=istio-system istio-ingressgateway -ojson \
+>  | jq '.status.loadBalancer.ingress[0].ip' --raw-output
+35.228.80.221
+>```
+</font>
+
+---
+
+## The rest is downhill... 🚴‍♂️
+
+Carry on following the codelabs tutorial. 
+
+Some notes here.
+
+### Nesting the canary
+
+Curling to the "canary" may initially provide 404. This is simply the delay when the service is being set up (after `apply`). Eventually:
+
+```
+$ curl -H "Host: canary.default.example.com" http://35.228.80.221
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Knative Routing Demo</title>
+    <link rel="stylesheet" type="text/css" href="/css/app.css" />
+</head>
+<body>
+            <div class="blue">App v1</div>
+    </div>
+</body>
+```
+
+*Heh, there's a loose tag in there. ;)*
+
+### `green` needs help!
+
+The "green" (v2) deployment was not starting to respond.
+
+><font color=red>tbd. Didn't get it solved. What's wrong with [v2.yaml](v2.yaml)? #help</font>
+
+Carrying further. 
 
 
 ## Appendices
