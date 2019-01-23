@@ -46,6 +46,11 @@ See [here](https://istio.io/docs/reference/config/istio.authentication.v1alpha1/
 ><font color=red>Confirm the above, once more experienced.</font>
 
 
+**Grafana**
+
+You may want to enable Grafana (there's a tick for it, right?). The Google codelabs uses it on page 10.
+
+
 ### Command line tools
 
 Have [gcloud installed](https://cloud.google.com/sdk/install) (Google Cloud docs). 
@@ -112,6 +117,13 @@ $ kubectl apply --filename https://storage.googleapis.com/knative-releases/build
 ```
 <sub>[source](https://github.com/knative/docs/blob/master/build/installing-build-component.md#adding-the-knative-build-component)</sub>
 
+<!-- hidden note
+>Note: In addition to that, also this *may* be needed:
+>
+>`$ kubectl apply --filename https://github.com/knative/serving/releases/download/v0.3.0/serving.yaml`
+-->
+
+
 Check that Knative stuff is up:
 
 ```
@@ -155,17 +167,29 @@ Here, we caught the image is tagged `latest` and `v0.3.0` so that's what we got.
 
 ## Then what?
 
-We'll get back to the [Knative codelabs #6](https://codelabs.developers.google.com/codelabs/knative-intro/#6) and follow their sample.
-
 ```
 $ kubectl apply -f helloworld.yaml
 service.serving.knative.dev "helloworld" created
 ```
 
-You should now follow the codelabs page. Come back at the end of page 7 (hmm.. which has URL hash `#6`).
+🎬
+You should now follow the codelabs page. Come back at the end of page 7.
 
 ---
 
+To get the IP where the service is reachable:
+
+```
+$ kubectl get service --namespace=istio-system istio-ingressgateway -ojson \
+  | jq '.status.loadBalancer.ingress[0].ip' --raw-output
+35.228.80.221
+```
+
+Note: this differs from the tutorial's instructions: use `istio-ingressgateway` instead of `knative-ingressgateway`.
+
+><font color=red>tbd. Uncertain if that change is correct.</font>
+
+<!-- disabled
 Did the `curl` command fail like this?
 
 ```
@@ -184,42 +208,14 @@ There are two gateways at play. Check at GCP Console > Kubernetes Engine > Servi
 ![](.images/gke-services.png)
 
 The `istio-ingressgateway` here is at `35.228.80.221`. It responds:
+-->
 
 ```
 $ curl -H "Host: helloworld.default.example.com" http://35.228.80.221
 Hello world!
 ```
 
-The `knative-ingressgateway` refuses the connection, as seen above.
-
----
-
->Note: Not sure if some setting would be at play here - it seems (naive guess) that Knative is now using the normal Istio gateway, which likely is simpler all-around.
-
----
-
-You can get the `istio-ingressgateway`'s IP the same way as mentioned in the codelabs tutorial, just ask for another service:
-
-```
-$ kubectl get service --namespace=istio-system istio-ingressgateway
-NAME                   TYPE           CLUSTER-IP   EXTERNAL-IP     PORT(S)                                                                                                                   AGE
-istio-ingressgateway   LoadBalancer   10.0.12.22   35.228.80.221   80:31380/TCP,443:31390/TCP,31400:31400/TCP,15011:30945/TCP,8060:30802/TCP,853:32565/TCP,15030:31614/TCP,15031:32127/TCP   5h
-```
-
----
-
-><font color=darkorange>Hint: You can use `jq` to pick the right value out:
->
->```
->$ kubectl get service --namespace=istio-system istio-ingressgateway -ojson \
->  | jq '.status.loadBalancer.ingress[0].ip' --raw-output
-35.228.80.221
->```
-</font>
-
----
-
-## The rest is downhill... 🚴‍♂️
+## The rest is downhill... 🚴‍♂️ (you wish!!!)
 
 Carry on following the codelabs tutorial. 
 
@@ -245,6 +241,8 @@ $ curl -H "Host: canary.default.example.com" http://35.228.80.221
 
 *Heh, there's a loose tag in there. ;)*
 
+<font color=red>
+
 ### `green` needs help!
 
 The "green" (v2) deployment was not starting to respond.
@@ -252,6 +250,41 @@ The "green" (v2) deployment was not starting to respond.
 ><font color=red>tbd. Didn't get it solved. What's wrong with [v2.yaml](v2.yaml)? #help</font>
 
 Carrying further. 
+</font>
+
+### Autoscaling does not respond
+
+```
+$ curl --header "Host: autoscale-go.default.example.com" \
+  "http://${IP_ADDRESS?}?sleep=1000"
+```
+
+><font color=red>That call does not respond.</font>
+
+### Monitoring
+
+```
+$ kubectl port-forward --namespace knative-monitoring \
+  $(kubectl get pods --namespace knative-monitoring \
+      --selector=app=grafana --output=jsonpath="{.items..metadata.name}")\
+  8080:3000
+```
+
+Ok, hadn't clicked "graphana" to be included in the cluster.
+
+Also, page 10 requires `go` [to be installed](https://golang.org/doc/install#macos) (did not try).
+
+
+### Building (pages 11..13) - skipped
+
+Did not have need for Knative build - [Google Cloud Build](https://cloud.google.com/cloud-build/) does similar.
+
+
+## Summary
+
+Did not get things fully to work. Have reported the problems in some forums - and at due time the tutorial itself will get updated to Knative 0.3.0.
+
+In the mean time, I got granted access to [GKE Serverless](https://docs.google.com/forms/d/e/1FAIpQLSdG5cCIiHhkW7srw9MWvdiLEsLXwJES1R3lnKgAn-opy3_iuQ/viewform) (application form) and will try it out, instead.
 
 
 ## Appendices
@@ -264,3 +297,12 @@ GKE tries to make upgrading Kubernetes easy. Let's collect here experiences abou
 
 - took ~15min but really smooth
 
+### Knative support channels
+
+- [knative-users](https://groups.google.com/forum/#!forum/knative-users) (Google groups)
+  - official channel, but very little traffic in early 2019
+
+### Issues to track
+
+- "Race Condition installing Serving from Release 0.3.0 yaml" [#2940](https://github.com/knative/serving/issues/2940)
+- "Getting started with Knative 0.3.0 on GKE" [#2966](https://github.com/knative/serving/issues/2966)
