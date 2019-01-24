@@ -306,3 +306,7 @@ GKE tries to make upgrading Kubernetes easy. Let's collect here experiences abou
 
 - "Race Condition installing Serving from Release 0.3.0 yaml" [#2940](https://github.com/knative/serving/issues/2940)
 - "Getting started with Knative 0.3.0 on GKE" [#2966](https://github.com/knative/serving/issues/2966)
+- "Ingress bug" [#756](https://github.com/knative/docs/issues/756)
+  - wonder if this is connected to our problems
+- "K8S 1.11.x Serving logging doesn't work" [#594](https://github.com/knative/docs/issues/593)
+  
