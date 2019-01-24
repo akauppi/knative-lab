@@ -9,4 +9,3 @@ spec:
         spec:
           container:
             image: "gcr.io/knative-samples/autoscale-go:0.1"
-            

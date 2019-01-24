@@ -164,7 +164,6 @@ $ kubectl apply --filename https://storage.googleapis.com/knative-releases/build
 >`$ kubectl apply --filename https://github.com/knative/serving/releases/download/v0.3.0/serving.yaml`
 -->
 
-
 Check that Knative stuff is up:
 
 ```
@@ -177,6 +176,13 @@ webhook-7797ffb6bf-qv7fr      1/1       Running   0          4m
 ```
 
 :)
+
+### Alternative instructions (side track)
+
+Knative with GKE page has [different installation instructions](https://github.com/knative/docs/blob/master/install/Knative-with-GKE.md#installing-knative).
+
+They install all the bits, not just `serving`, and also check that all of those are up.
+
 
 ### Which version did we get?
 
