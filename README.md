@@ -1,5 +1,8 @@
 # Knative Lab
 
+><font color=red>NOTE: This is work-in-progress. You should use `knative-ingress` (not `istio-ingress` as this doc implies). Will try to update the instructions.
+</font>
+
 Getting started with Knative on Google Kubernetes Engine.
 
 <font size="+5">🎯</font> Aim:
@@ -287,17 +290,6 @@ $ curl -H "Host: canary.default.example.com" http://35.228.80.221
 ```
 
 *Heh, there's a loose tag in there. ;)*
-
-<font color=red>
-
-### `green` needs help!
-
-The "green" (v2) deployment was not starting to respond.
-
-><font color=red>tbd. Didn't get it solved. What's wrong with [v2.yaml](v2.yaml)? #help</font>
-
-Carrying further. 
-</font>
 
 ### Autoscaling does not respond
 
