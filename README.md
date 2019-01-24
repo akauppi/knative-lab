@@ -1,5 +1,8 @@
 # Knative Lab
 
+><font color=red>NOTE: This is work-in-progress. You should use `knative-ingress` (not `istio-ingress` as this doc implies). Will try to update the instructions.
+</font>
+
 Getting started with Knative on Google Kubernetes Engine.
 
 <font size="+5">🎯</font> Aim:
@@ -15,41 +18,15 @@ Getting started with Knative on Google Kubernetes Engine.
 
 - knative docs > [Installing Knative](https://github.com/knative/docs/blob/master/install/README.md)
 - Google CodeLabs > [Using Knative to deploy serverless applications to Kubernetes](https://codelabs.developers.google.com/codelabs/knative-intro/#0) <font size="+2">🥇</font>
+- [Knative Install on Google Kubernetes Engine](https://github.com/knative/docs/blob/master/install/Knative-with-GKE.md) (GitHub)
   
 ## Requirements
 
 You have:
 
 - a Google Cloud account
-  - GKE enabled within that project
-  - Istio enabled
+  - GKE enabled within that project (with Kubernetes v1.11 or newer)
 - and [`gcloud` installed](https://cloud.google.com/sdk/install)
-
-**GKE settings (at creation of the cluster):**
-
-In "advanced settings":
-
-- `Networking` > `VPC-native` > `[x] Enable VPC native (using alias IP)` <sub>[details](https://cloud.google.com/kubernetes-engine/docs/how-to/alias-ips?hl=en_US&_ga=2.193848357.-966989269.1542020118&_gac=1.155356873.1547648787.CjwKCAiAyfvhBRBsEiwAe2t_i2Sx9xEckJFlzuzmzZYqnJwTjM2cwjU3AlxjppH9MPEtQa5w7QnXvhoCU_EQAvD_BwE)</sub>
-  - this is "soon going to be default" so no reason not to
-- `Load balancing` > `[ ] Enable HTTP load balancing`; you can likely switch this off since we're using Istio. <font color=red>tbd. try out</font>
-- `Additional features` > `[x] Try the new Stackdriver beta Monitoring and Logging experience`
-- `[x] Enable Istio`
-
-Kubernetes 1.11 is required for Knative 0.3.0 and above (I chose latest, `1.11.6-gke.2`). If you miss the Kubernetes version, the cluster is upgradable (see later).
-
-**Permissive or strict mTLS mode?**
-
-See [here](https://istio.io/docs/reference/config/istio.authentication.v1alpha1/#MutualTls-Mode):
-
-- "permissive" allows http as well as https (right?), and does not require requests to be carrying a certificate
-
-><font color=red>Confirm the above, once more experienced.</font>
-
-
-**Grafana**
-
-You may want to enable Grafana (there's a tick for it, right?). The Google codelabs uses it on page 10.
-
 
 ### Command line tools
 
@@ -59,11 +36,78 @@ Have [gcloud installed](https://cloud.google.com/sdk/install) (Google Cloud docs
 $ gcloud init     # select right GCP account and project
 ```
 
-Install `kubectl` (note: this likely means you shouldn't have a non-GCP `kubectl` installed): 
+If you don't already have `kubectl` from `gcloud`, install it  (note: this likely means you shouldn't have a non-GCP `kubectl` installed): 
 
 ```
 $ gcloud components install kubectl
 ```
+
+>Note: If you've installed `kubectl` earlier, check that it is "1.10 or newer" with `kubectl version`.
+
+### Kubernetes cluster
+
+You can create the cluster in the Google Cloud Console. [^1] In "advanced settings":
+
+- `Networking` > `VPC-native` > `[x] Enable VPC native (using alias IP)` <sub>[details](https://cloud.google.com/kubernetes-engine/docs/how-to/alias-ips?hl=en_US&_ga=2.193848357.-966989269.1542020118&_gac=1.155356873.1547648787.CjwKCAiAyfvhBRBsEiwAe2t_i2Sx9xEckJFlzuzmzZYqnJwTjM2cwjU3AlxjppH9MPEtQa5w7QnXvhoCU_EQAvD_BwE)</sub>
+  - this is "soon going to be default" so no reason not to
+- `Load balancing` > `[ ] Enable HTTP load balancing`; you can likely switch this off since we're using Istio. <font color=red>tbd. try out</font>
+- `Additional features` > `[x] Try the new Stackdriver beta Monitoring and Logging experience`
+- <strike>`[x] Enable Istio`</strike>
+- version 1.11.x
+- 4 vCPU nodes (`n1-standard-4`)[^2]
+- Node autoscaling, 1..10 nodes
+- API scopes for `cloud-platform`, `logging-write`, `monitoring-write`, and `pubsub` [^3]
+
+Part of these settings come from [Official instructions](https://github.com/knative/docs/blob/master/install/Knative-with-GKE.md).
+
+[^1]: [Knative instructions](https://github.com/knative/docs/blob/master/install/Knative-with-GKE.md) also provide command line version
+
+[^2]: Took "small" (tbd. write here if it worked)
+
+[^3]: Knative instructions tell "if required", but not sure how to tell. Maybe it just refers to the PubSub scope.
+
+
+**Istio**
+
+GKE cluster wizard offers installation of Istio but Knative has its own yaml's:<sub>[source](https://github.com/knative/docs/blob/master/install/Knative-with-GKE.md#installing-istio)</sub>
+
+```
+$ kubectl apply --filename https://github.com/knative/serving/releases/download/v0.3.0/istio-crds.yaml && \
+$ kubectl apply --filename https://github.com/knative/serving/releases/download/v0.3.0/istio.yaml
+```
+
+Install with those, since it's in the docs.
+
+Also, the instructions state:
+
+```
+$ kubectl label namespace default istio-injection=enabled
+```
+
+<!-- disabled (only asked if ticking Istio in the cluster creation)
+**Istio: Permissive or strict mTLS mode?**
+
+See [here](https://istio.io/docs/reference/config/istio.authentication.v1alpha1/#MutualTls-Mode):
+
+- "permissive" allows http as well as https (right?), and does not require requests to be carrying a certificate
+
+><font color=red>Confirm the above, once more experienced.</font>
+-->
+
+**Grafana**
+
+You may want to enable Grafana (there's a tick for it, right?). The Google codelabs uses it on page 10.
+
+---
+
+Once these are done, check that everything gets up nicely:
+
+```
+$ kubectl get pods --namespace istio-system
+```
+
+
+### Configuring the command line tools
 
 Configure cluster access for kubectl <sub>[source](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl)</sub>:
 
@@ -123,7 +167,6 @@ $ kubectl apply --filename https://storage.googleapis.com/knative-releases/build
 >`$ kubectl apply --filename https://github.com/knative/serving/releases/download/v0.3.0/serving.yaml`
 -->
 
-
 Check that Knative stuff is up:
 
 ```
@@ -136,6 +179,13 @@ webhook-7797ffb6bf-qv7fr      1/1       Running   0          4m
 ```
 
 :)
+
+### Alternative instructions (side track)
+
+Knative with GKE page has [different installation instructions](https://github.com/knative/docs/blob/master/install/Knative-with-GKE.md#installing-knative).
+
+They install all the bits, not just `serving`, and also check that all of those are up.
+
 
 ### Which version did we get?
 
@@ -241,17 +291,6 @@ $ curl -H "Host: canary.default.example.com" http://35.228.80.221
 
 *Heh, there's a loose tag in there. ;)*
 
-<font color=red>
-
-### `green` needs help!
-
-The "green" (v2) deployment was not starting to respond.
-
-><font color=red>tbd. Didn't get it solved. What's wrong with [v2.yaml](v2.yaml)? #help</font>
-
-Carrying further. 
-</font>
-
 ### Autoscaling does not respond
 
 ```
@@ -310,3 +349,25 @@ GKE tries to make upgrading Kubernetes easy. Let's collect here experiences abou
   - wonder if this is connected to our problems
 - "K8S 1.11.x Serving logging doesn't work" [#594](https://github.com/knative/docs/issues/593)
   
+
+### Troubleshooting
+
+If things don't work, check this:
+
+```
+$ kubectl get pods --namespace istio-system
+NAME                                      READY     STATUS             RESTARTS   AGE
+istio-citadel-776fb85794-kf7cv            1/1       Running            0          1d
+...
+knative-ingressgateway-56d46fcb88-dz59h   0/1       CrashLoopBackOff   274        1d
+...
+```
+
+```
+$ kubectl logs knative-ingressgateway-56d46fcb88-dz59h -n istio-system
+...
+[2019-01-24 05:36:04.607][50][critical][main] external/envoy/source/server/server.cc:78] error initializing configuration '/etc/istio/proxy/envoy-rev0.json': malformed IP address: istio-statsd-prom-bridge
+...
+```
+
+Hmmm...
